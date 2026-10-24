@@ -1,0 +1,72 @@
+<div class="entity-picker position-relative">
+  <div
+    *ngIf="selectedId !== null; else searchBox"
+    class="entity-picker-chip d-flex align-items-center gap-2 border rounded px-2 py-1 bg-body"
+    [class.border-danger]="invalid"
+    [class.bg-body-secondary]="isDisabled"
+  >
+    <i class="bi text-primary" [ngClass]="icon" aria-hidden="true"></i>
+    <span class="text-truncate" data-picker="selected">{{ displayLabel }}</span>
+    <button
+      type="button"
+      class="btn-close ms-auto"
+      [attr.id]="inputId || null"
+      [attr.aria-label]="'Remove ' + displayLabel"
+      [attr.aria-describedby]="describedBy"
+      [disabled]="isDisabled"
+      (click)="clear()"
+    ></button>
+  </div>
+
+  <ng-template #searchBox>
+    <input
+      #searchInput
+      type="text"
+      class="form-control"
+      autocomplete="off"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-haspopup="listbox"
+      [attr.id]="inputId || null"
+      [class.is-invalid]="invalid"
+      [attr.aria-invalid]="invalid ? 'true' : null"
+      [placeholder]="placeholder"
+      [value]="term"
+      [disabled]="isDisabled"
+      [attr.aria-expanded]="isOpen"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-activedescendant]="activeOptionId"
+      [attr.aria-describedby]="describedBy"
+      (input)="onInput(searchInput.value)"
+      (keydown)="onKeydown($event)"
+      (blur)="onBlur()"
+    />
+    <ul
+      *ngIf="isOpen"
+      #listbox
+      class="entity-picker-list list-group position-absolute w-100 shadow"
+      role="listbox"
+      [id]="listboxId"
+      (mousedown)="$event.preventDefault()"
+    >
+      <li
+        *ngFor="let item of results; let i = index"
+        class="list-group-item list-group-item-action"
+        role="option"
+        [id]="optionId(i)"
+        [class.active]="i === activeIndex"
+        [attr.aria-selected]="i === activeIndex"
+        (click)="select(item)"
+        (mouseenter)="activeIndex = i"
+      >
+        <span class="d-block fw-semibold">{{ labelOf(item) }}</span>
+        <span *ngIf="detailOf(item)" class="d-block small">{{ detailOf(item) }}</span>
+      </li>
+      <li *ngIf="results.length === 0" class="list-group-item text-body-secondary" role="presentation">
+        {{ searchFailed ? 'The search failed. Try again.' : 'No matches found' }}
+      </li>
+    </ul>
+  </ng-template>
+
+  <div class="visually-hidden" role="status" aria-live="polite">{{ statusMessage }}</div>
+</div>

@@ -1,0 +1,9 @@
+<div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert" data-concurrency-panel>
+  <div>
+    <p class="fw-semibold mb-0">This record was changed by another user</p>
+    <p class="mb-0">Your change was not saved. Reload the record to see the latest version, then try again.</p>
+  </div>
+  <button type="button" class="btn btn-warning btn-sm" [disabled]="busy" (click)="reload.emit()">
+    <span *ngIf="busy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Reload
+  </button>
+</div>

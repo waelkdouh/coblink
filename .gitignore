@@ -1,0 +1,38 @@
+# ---------- .NET ----------
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+TestResults/
+*.log
+publish/
+artifacts/
+coverage/
+*.trx
+
+# ---------- Node / Angular ----------
+node_modules/
+client/dist/
+client/.angular/
+client/coverage/
+npm-debug.log*
+yarn-error.log*
+
+# ---------- IDE ----------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+
+# ---------- Local environment ----------
+.env
+*.local.json
+appsettings.Local.json
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db

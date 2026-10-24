@@ -1,0 +1,40 @@
+<app-modal title="Resolve dispute" [dismissible]="!busy" (closed)="cancelled.emit()">
+  <form [id]="formId" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <app-form-alert [messages]="alertMessages"></app-form-alert>
+
+    <fieldset class="mb-3" [attr.aria-describedby]="showError(form.controls.upheld) ? 'resolve-upheld-errors' : null">
+      <legend class="form-label fs-6">Decision <span class="text-danger" aria-hidden="true">*</span></legend>
+      <div class="form-check">
+        <input id="resolve-upheld" type="radio" class="form-check-input" formControlName="upheld" [value]="true" />
+        <label class="form-check-label" for="resolve-upheld">Dispute upheld &ndash; takeback stands</label>
+        <div class="form-text mt-0">The response window restarts and recovery continues.</div>
+      </div>
+      <div class="form-check mt-2">
+        <input id="resolve-overturned" type="radio" class="form-check-input" formControlName="upheld" [value]="false" />
+        <label class="form-check-label" for="resolve-overturned">Dispute overturned &ndash; cancel takeback</label>
+        <div class="form-text mt-0">The takeback is cancelled. Not possible once a recovery was recorded: write it off instead.</div>
+      </div>
+      <app-form-errors [control]="form.controls.upheld" label="Decision" forId="resolve-upheld"></app-form-errors>
+    </fieldset>
+
+    <label class="form-label" for="resolve-comment">Comment <span class="text-danger" aria-hidden="true">*</span></label>
+    <textarea id="resolve-comment" class="form-control" rows="4" formControlName="comment" aria-required="true"></textarea>
+    <app-form-errors [control]="form.controls.comment" label="Comment" forId="resolve-comment"></app-form-errors>
+    <div class="form-text">{{ remaining }} characters remaining</div>
+  </form>
+
+  <button type="button" appModalFooter class="btn btn-outline-secondary" data-dialog-dismiss [disabled]="busy" (click)="cancelled.emit()">
+    Cancel
+  </button>
+  <button
+    type="submit"
+    appModalFooter
+    class="btn"
+    data-dialog-confirm
+    [ngClass]="confirmClass"
+    [attr.form]="formId"
+    [disabled]="busy"
+  >
+    <span *ngIf="busy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ confirmLabel }}
+  </button>
+</app-modal>

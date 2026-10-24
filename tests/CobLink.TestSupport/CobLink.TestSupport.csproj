@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CobLink.TestSupport</RootNamespace>
+    <AssemblyName>CobLink.TestSupport</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CobLink.Models\CobLink.Models.csproj" />
+    <ProjectReference Include="..\..\src\CobLink.Data\CobLink.Data.csproj" />
+    <ProjectReference Include="..\..\src\CobLink.Business\CobLink.Business.csproj" />
+  </ItemGroup>
+
+</Project>

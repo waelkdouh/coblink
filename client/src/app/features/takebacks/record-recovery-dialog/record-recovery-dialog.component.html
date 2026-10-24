@@ -1,0 +1,81 @@
+<app-modal title="Record recovery" size="lg" [dismissible]="!busy" (closed)="cancelled.emit()">
+  <form [id]="formId" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <p class="mb-3" data-recovery-summary>
+      Outstanding balance <strong>{{ takeback.outstandingAmount | currency: 'USD' }}</strong> of
+      {{ takeback.takebackAmount | currency: 'USD' }}.
+    </p>
+    <app-form-alert [messages]="alertMessages"></app-form-alert>
+
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label" for="recovery-amount">Amount <span class="text-danger" aria-hidden="true">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text" aria-hidden="true">$</span>
+          <input
+            id="recovery-amount"
+            type="number"
+            class="form-control"
+            formControlName="amount"
+            step="0.01"
+            inputmode="decimal"
+            aria-required="true"
+          />
+          <button type="button" class="btn btn-outline-secondary" data-action="use-outstanding" [disabled]="busy" (click)="useOutstanding()">
+            Use balance
+          </button>
+        </div>
+        <app-form-errors [control]="form.controls.amount" label="Amount" forId="recovery-amount"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="recovery-date">Recovery date <span class="text-danger" aria-hidden="true">*</span></label>
+        <input
+          id="recovery-date"
+          type="date"
+          class="form-control"
+          formControlName="recoveryDate"
+          aria-required="true"
+          [attr.min]="noticeDate || null"
+          [attr.max]="today"
+        />
+        <app-form-errors [control]="form.controls.recoveryDate" label="Recovery date" forId="recovery-date"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="recovery-method">Method <span class="text-danger" aria-hidden="true">*</span></label>
+        <select id="recovery-method" class="form-select" formControlName="method" aria-required="true">
+          <option [ngValue]="null">Select a method</option>
+          <option *ngFor="let item of methods" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.method" label="Method" forId="recovery-method"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="recovery-reference">
+          Reference number<span *ngIf="requiresReference" class="text-danger" aria-hidden="true"> *</span>
+          <span *ngIf="!requiresReference" class="text-body-secondary fw-normal"> (optional)</span>
+        </label>
+        <input
+          id="recovery-reference"
+          type="text"
+          class="form-control"
+          formControlName="referenceNumber"
+          autocomplete="off"
+          [attr.aria-required]="requiresReference"
+        />
+        <div class="form-text">Check or EFT number. Required for checks and EFT payments.</div>
+        <app-form-errors [control]="form.controls.referenceNumber" label="Reference number" forId="recovery-reference"></app-form-errors>
+      </div>
+      <div class="col-12">
+        <label class="form-label" for="recovery-notes">Notes <span class="text-body-secondary fw-normal">(optional)</span></label>
+        <textarea id="recovery-notes" class="form-control" rows="3" formControlName="notes"></textarea>
+        <div class="form-text">{{ maxNotesLength - form.controls.notes.value.length }} characters remaining</div>
+        <app-form-errors [control]="form.controls.notes" label="Notes" forId="recovery-notes"></app-form-errors>
+      </div>
+    </div>
+  </form>
+
+  <button type="button" appModalFooter class="btn btn-outline-secondary" data-dialog-dismiss [disabled]="busy" (click)="cancelled.emit()">
+    Cancel
+  </button>
+  <button type="submit" appModalFooter class="btn btn-success" data-dialog-confirm [attr.form]="formId" [disabled]="busy">
+    <span *ngIf="busy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Record recovery
+  </button>
+</app-modal>

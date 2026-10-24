@@ -1,0 +1,328 @@
+<app-loading-spinner *ngIf="loading" label="Loading the takeback..."></app-loading-spinner>
+
+<div *ngIf="loadError" class="alert alert-danger" role="alert" data-load-error>
+  <p class="mb-2">{{ loadError.message }}</p>
+  <a class="btn btn-sm btn-outline-danger" routerLink="/takebacks">Back to takebacks</a>
+</div>
+
+<ng-container *ngIf="takeback as t">
+  <nav aria-label="Breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/takebacks">Takebacks</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ t.takebackNumber }}</li>
+    </ol>
+  </nav>
+
+  <div class="page-header">
+    <div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <h1 data-takeback-number>{{ t.takebackNumber }}</h1>
+        <app-status-badge kind="takebackStatus" [value]="t.status"></app-status-badge>
+        <app-overdue-badge [overdue]="t.isOverdue"></app-overdue-badge>
+      </div>
+      <p class="text-body-secondary mb-0 mt-1">Claim <span data-claim-number>{{ t.claimNumber }}</span></p>
+    </div>
+    <div class="d-flex flex-wrap gap-2" role="group" aria-label="Takeback actions" data-actions>
+      <ng-container *ngFor="let button of actionButtons">
+        <a
+          *ngIf="button.dialog === null; else actionButton"
+          class="btn"
+          [ngClass]="button.cssClass"
+          [routerLink]="['/takebacks', t.takebackId, 'edit']"
+          [attr.data-action]="button.action"
+        >
+          <i class="bi me-1" [ngClass]="button.icon" aria-hidden="true"></i>{{ button.label }}
+        </a>
+        <ng-template #actionButton>
+          <button
+            type="button"
+            class="btn"
+            [ngClass]="button.cssClass"
+            [attr.data-action]="button.action"
+            (click)="open(button.dialog!)"
+          >
+            <i class="bi me-1" [ngClass]="button.icon" aria-hidden="true"></i>{{ button.label }}
+          </button>
+        </ng-template>
+      </ng-container>
+    </div>
+  </div>
+
+  <app-concurrency-panel *ngIf="concurrency" [busy]="reloading" (reload)="reload()"></app-concurrency-panel>
+
+  <div class="row g-3 mb-3" data-amounts>
+    <div class="col-sm-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-body-secondary small">Takeback amount</div>
+          <div class="kpi-value" data-amount="takeback">{{ t.takebackAmount | currency: 'USD' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-body-secondary small">Recovered</div>
+          <div class="kpi-value text-success" data-amount="recovered">{{ t.recoveredAmount | currency: 'USD' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-body-secondary small" data-amount-label="outstanding">{{ balanceLabel }}</div>
+          <div class="kpi-value" [class.text-danger]="balanceIsDue" data-amount="outstanding">
+            {{ t.outstandingAmount | currency: 'USD' }}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div
+        class="progress"
+        role="progressbar"
+        aria-label="Share of the takeback amount that is recovered"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        style="height: 1.25rem"
+        [attr.aria-valuenow]="recoveredPercent"
+        data-progress
+      >
+        <div class="progress-bar bg-success" [style.width.%]="recoveredPercent">{{ recoveredPercent }}% recovered</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="card mb-4" aria-labelledby="details-heading">
+    <div class="card-body">
+      <h2 id="details-heading" class="h5">Details</h2>
+      <dl class="row mb-0" data-details>
+        <dt class="col-sm-3">Member</dt>
+        <dd class="col-sm-9">{{ t.memberName }} <span class="text-body-secondary">({{ t.memberNumber }})</span></dd>
+
+        <dt class="col-sm-3">Provider</dt>
+        <dd class="col-sm-9">{{ t.providerName }} <span class="text-body-secondary">({{ t.providerNumber }})</span></dd>
+
+        <dt class="col-sm-3">Reason</dt>
+        <dd class="col-sm-9" data-reason>{{ t.reason | lookupName: 'takebackReasons' }}</dd>
+
+        <ng-container *ngIf="t.otherCarrierName || t.otherPolicyNumber">
+          <dt class="col-sm-3">Other carrier</dt>
+          <dd class="col-sm-9" data-other-carrier>{{ t.otherCarrierName || '—' }}</dd>
+
+          <dt class="col-sm-3">Other policy number</dt>
+          <dd class="col-sm-9">{{ t.otherPolicyNumber || '—' }}</dd>
+        </ng-container>
+
+        <dt class="col-sm-3">Date of service</dt>
+        <dd class="col-sm-9">{{ t.dateOfService | calendarDate }}</dd>
+
+        <dt class="col-sm-3">Original paid amount</dt>
+        <dd class="col-sm-9">{{ t.originalPaidAmount | currency: 'USD' }}</dd>
+
+        <ng-container *ngIf="t.noticeDate">
+          <dt class="col-sm-3">Notice date</dt>
+          <dd class="col-sm-9" data-notice-date>{{ t.noticeDate | calendarDate }}</dd>
+        </ng-container>
+
+        <ng-container *ngIf="t.dueDate">
+          <dt class="col-sm-3">Due date</dt>
+          <dd class="col-sm-9" data-due-date>
+            {{ t.dueDate | calendarDate }}
+            <app-overdue-badge class="ms-2" [overdue]="t.isOverdue"></app-overdue-badge>
+          </dd>
+        </ng-container>
+
+        <ng-container *ngIf="t.approvedDate">
+          <dt class="col-sm-3">Approved</dt>
+          <dd class="col-sm-9">{{ t.approvedByName || 'Unknown' }} on {{ t.approvedDate | date: 'medium' }}</dd>
+        </ng-container>
+
+        <dt class="col-sm-3">Created</dt>
+        <dd class="col-sm-9">{{ t.createdByName }} on {{ t.createdDate | date: 'medium' }}</dd>
+
+        <ng-container *ngIf="t.modifiedDate">
+          <dt class="col-sm-3">Last modified</dt>
+          <dd class="col-sm-9">{{ t.modifiedByName || 'Unknown' }} on {{ t.modifiedDate | date: 'medium' }}</dd>
+        </ng-container>
+
+        <ng-container *ngIf="t.notes">
+          <dt class="col-sm-3">Notes</dt>
+          <dd class="col-sm-9 text-pre-wrap mb-0" data-notes>{{ t.notes }}</dd>
+        </ng-container>
+      </dl>
+    </div>
+  </section>
+
+  <section class="card mb-4" aria-labelledby="recoveries-heading">
+    <div class="card-body">
+      <h2 id="recoveries-heading" class="h5">Recoveries</h2>
+      <div *ngIf="recoveries.length > 0; else noRecoveries" class="table-responsive">
+        <table class="table table-sm align-middle mb-0" data-recoveries>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Method</th>
+              <th scope="col" class="text-end">Amount</th>
+              <th scope="col">Reference</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Recorded by</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let recovery of recoveries; trackBy: trackByRecovery" data-recovery-row>
+              <td>{{ recovery.recoveryDate | calendarDate }}</td>
+              <td>{{ recovery.method | lookupName: 'recoveryMethods' }}</td>
+              <td class="text-end">{{ recovery.amount | currency: 'USD' }}</td>
+              <td>{{ recovery.referenceNumber || '—' }}</td>
+              <td class="text-pre-wrap">{{ recovery.notes }}</td>
+              <td>
+                {{ recovery.createdByName }}
+                <div class="small text-body-secondary">{{ recovery.createdDate | date: 'medium' }}</div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" colspan="2">Total recovered</th>
+              <td class="text-end fw-semibold" data-recovered-total>{{ t.recoveredAmount | currency: 'USD' }}</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <ng-template #noRecoveries><p class="text-body-secondary mb-0" data-empty="recoveries">No recoveries have been recorded yet.</p></ng-template>
+    </div>
+  </section>
+
+  <section class="card mb-4" aria-labelledby="activities-heading">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h2 id="activities-heading" class="h5 mb-0">Linked activities</h2>
+        <a class="btn btn-sm btn-outline-primary" routerLink="/activities/new" [queryParams]="{ takebackId: t.takebackId }" data-action="add-activity">
+          <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add activity
+        </a>
+      </div>
+      <div *ngIf="linkedActivities.length > 0; else noActivities" class="table-responsive">
+        <table class="table table-sm align-middle mb-0" data-linked-activities>
+          <thead>
+            <tr>
+              <th scope="col">Activity</th>
+              <th scope="col">Subject</th>
+              <th scope="col">Type</th>
+              <th scope="col">Status</th>
+              <th scope="col">Priority</th>
+              <th scope="col">Assigned to</th>
+              <th scope="col">Due date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let activity of linkedActivities; trackBy: trackByActivity" data-activity-row>
+              <td><a [routerLink]="['/activities', activity.activityId]">{{ activity.activityNumber }}</a></td>
+              <td>{{ activity.subject }}</td>
+              <td>{{ activity.activityType | lookupName: 'activityTypes' }}</td>
+              <td><app-status-badge kind="activityStatus" [value]="activity.status"></app-status-badge></td>
+              <td><app-status-badge kind="priority" [value]="activity.priority"></app-status-badge></td>
+              <td>{{ activity.assignedToName || 'Unassigned' }}</td>
+              <td>
+                <span *ngIf="activity.dueDate; else noDueDate">{{ activity.dueDate | calendarDate }}</span>
+                <ng-template #noDueDate><span class="text-body-secondary">&mdash;</span></ng-template>
+                <app-overdue-badge class="ms-2" [overdue]="activity.isOverdue"></app-overdue-badge>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noActivities><p class="text-body-secondary mb-0" data-empty="activities">No activities are linked to this takeback.</p></ng-template>
+    </div>
+  </section>
+
+  <section class="card mb-4" aria-labelledby="history-heading">
+    <div class="card-body">
+      <h2 id="history-heading" class="h5">History</h2>
+      <ol *ngIf="history.length > 0; else noHistory" class="timeline mt-3 mb-0" data-history>
+        <li *ngFor="let entry of history; trackBy: trackByHistory" data-history-entry>
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <strong data-history-action>{{ actionLabel(entry.action) }}</strong>
+            <span class="d-inline-flex align-items-center gap-1">
+              <ng-container *ngIf="entry.fromStatus !== null">
+                <span class="visually-hidden">from</span>
+                <app-status-badge kind="takebackStatus" [value]="entry.fromStatus"></app-status-badge>
+                <i class="bi bi-arrow-right" aria-hidden="true"></i>
+              </ng-container>
+              <span class="visually-hidden">to</span>
+              <app-status-badge kind="takebackStatus" [value]="entry.toStatus"></app-status-badge>
+            </span>
+          </div>
+          <div *ngIf="entry.comment" class="text-pre-wrap mt-1" data-history-comment>{{ entry.comment }}</div>
+          <div class="small text-body-secondary">{{ entry.changedByName }} &middot; {{ entry.changedDate | date: 'medium' }}</div>
+        </li>
+      </ol>
+      <ng-template #noHistory><p class="text-body-secondary mb-0" data-empty="history">There is no history yet.</p></ng-template>
+    </div>
+  </section>
+
+  <ng-container [ngSwitch]="dialog">
+    <app-confirm-dialog
+      *ngSwitchCase="'submit'"
+      title="Submit for approval"
+      message="The takeback is sent to a supervisor for approval. It cannot be edited while it is pending."
+      confirmLabel="Submit for approval"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="confirm()"
+      (cancelled)="closeDialog()"
+    ></app-confirm-dialog>
+
+    <app-confirm-dialog
+      *ngSwitchCase="'sendNotice'"
+      title="Send recovery notice"
+      message="The recovery notice is sent to the provider."
+      confirmLabel="Send notice"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="confirm()"
+      (cancelled)="closeDialog()"
+    >
+      <p class="mb-0 text-body-secondary" data-notice-hint>
+        The notice date will be today ({{ today | calendarDate }}). The provider's response window starts today; the due date is
+        calculated by the server and shown as soon as the notice is sent.
+      </p>
+    </app-confirm-dialog>
+
+    <app-record-recovery-dialog
+      *ngSwitchCase="'recordRecovery'"
+      [takeback]="t"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="recordRecovery($event)"
+      (cancelled)="closeDialog()"
+    ></app-record-recovery-dialog>
+
+    <app-resolve-dispute-dialog
+      *ngSwitchCase="'resolveDispute'"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="resolveDispute($event)"
+      (cancelled)="closeDialog()"
+    ></app-resolve-dispute-dialog>
+
+    <ng-container *ngSwitchDefault>
+      <app-comment-dialog
+        *ngIf="commentDialog as config"
+        [title]="config.title"
+        [message]="config.message"
+        [label]="config.label"
+        [confirmLabel]="config.confirmLabel"
+        [confirmClass]="config.confirmClass"
+        [dismissLabel]="config.dismissLabel"
+        [required]="config.required"
+        [maxLength]="maxCommentLength"
+        [busy]="busy"
+        [error]="dialogError"
+        (confirmed)="confirm($event)"
+        (cancelled)="closeDialog()"
+      ></app-comment-dialog>
+    </ng-container>
+  </ng-container>
+</ng-container>

@@ -1,0 +1,195 @@
+<app-loading-spinner *ngIf="loading" label="Loading the activity..."></app-loading-spinner>
+
+<div *ngIf="loadError" class="alert alert-danger" role="alert" data-load-error>
+  <p class="mb-2">{{ loadError.message }}</p>
+  <a class="btn btn-sm btn-outline-danger" routerLink="/activities">Back to activities</a>
+</div>
+
+<ng-container *ngIf="activity as a">
+  <nav aria-label="Breadcrumb" class="mb-2">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a routerLink="/activities">Activities</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ a.activityNumber }}</li>
+    </ol>
+  </nav>
+
+  <div class="page-header">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <h1 data-activity-number>{{ a.activityNumber }}</h1>
+      <app-status-badge kind="activityStatus" [value]="a.status"></app-status-badge>
+      <app-status-badge kind="priority" [value]="a.priority"></app-status-badge>
+      <app-overdue-badge [overdue]="a.isOverdue"></app-overdue-badge>
+    </div>
+    <div class="d-flex flex-wrap gap-2" role="group" aria-label="Activity actions" data-actions>
+      <ng-container *ngFor="let button of actionButtons">
+        <a
+          *ngIf="button.action === ActivityAction.Edit; else actionButton"
+          class="btn"
+          [ngClass]="button.cssClass"
+          [routerLink]="['/activities', a.activityId, 'edit']"
+          [attr.data-action]="button.action"
+        >
+          <i class="bi me-1" [ngClass]="button.icon" aria-hidden="true"></i>{{ button.label }}
+        </a>
+        <ng-template #actionButton>
+          <button
+            type="button"
+            class="btn"
+            [ngClass]="button.cssClass"
+            [attr.data-action]="button.action"
+            (click)="open(button.action === ActivityAction.Complete ? 'complete' : button.action === ActivityAction.Cancel ? 'cancel' : 'reopen')"
+          >
+            <i class="bi me-1" [ngClass]="button.icon" aria-hidden="true"></i>{{ button.label }}
+          </button>
+        </ng-template>
+      </ng-container>
+    </div>
+  </div>
+
+  <app-concurrency-panel *ngIf="concurrency" [busy]="reloading" (reload)="reload()"></app-concurrency-panel>
+
+  <div *ngIf="isClosed" class="alert alert-secondary" role="status" data-read-only-banner>
+    <i class="bi bi-lock me-1" aria-hidden="true"></i>
+    This activity is {{ a.status | lookupName: 'activityStatuses' | lowercase }} and read-only.
+    <span *ngIf="can(ActivityAction.Reopen)">Reopen it to continue working on it.</span>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <section class="card mb-4" aria-labelledby="details-heading">
+        <div class="card-body">
+          <h2 id="details-heading" class="h5">{{ a.subject }}</h2>
+          <p *ngIf="a.description" class="text-pre-wrap" data-description>{{ a.description }}</p>
+          <dl class="row mb-0" data-details>
+            <dt class="col-sm-4">Type</dt>
+            <dd class="col-sm-8">{{ a.activityType | lookupName: 'activityTypes' }}</dd>
+
+            <dt class="col-sm-4">Member</dt>
+            <dd class="col-sm-8">
+              <a
+                *ngIf="a.memberNumber; else noMember"
+                routerLink="/activities"
+                [queryParams]="{ searchText: a.memberNumber, openOnly: false }"
+                title="Show all activities of this member"
+                >{{ a.memberName }} ({{ a.memberNumber }})</a
+              >
+              <ng-template #noMember><span class="text-body-secondary">&mdash;</span></ng-template>
+            </dd>
+
+            <dt class="col-sm-4">Takeback</dt>
+            <dd class="col-sm-8">
+              <a *ngIf="a.takebackId; else noTakeback" [routerLink]="['/takebacks', a.takebackId]">{{ a.takebackNumber }}</a>
+              <ng-template #noTakeback><span class="text-body-secondary">&mdash;</span></ng-template>
+            </dd>
+
+            <dt class="col-sm-4">Assigned to</dt>
+            <dd class="col-sm-8">{{ a.assignedToName || 'Unassigned' }}</dd>
+
+            <dt class="col-sm-4">Due date</dt>
+            <dd class="col-sm-8">
+              <span *ngIf="a.dueDate; else noDueDate">{{ a.dueDate | calendarDate }}</span>
+              <ng-template #noDueDate><span class="text-body-secondary">&mdash;</span></ng-template>
+              <app-overdue-badge class="ms-2" [overdue]="a.isOverdue"></app-overdue-badge>
+            </dd>
+
+            <dt class="col-sm-4">Created</dt>
+            <dd class="col-sm-8">{{ a.createdByName }} on {{ a.createdDate | date: 'medium' }}</dd>
+
+            <ng-container *ngIf="a.modifiedDate">
+              <dt class="col-sm-4">Last modified</dt>
+              <dd class="col-sm-8">{{ a.modifiedByName || 'Unknown' }} on {{ a.modifiedDate | date: 'medium' }}</dd>
+            </ng-container>
+
+            <ng-container *ngIf="a.completedDate">
+              <dt class="col-sm-4">Completed</dt>
+              <dd class="col-sm-8">{{ a.completedDate | date: 'medium' }}</dd>
+            </ng-container>
+
+            <ng-container *ngIf="a.outcome">
+              <dt class="col-sm-4">Outcome</dt>
+              <dd class="col-sm-8 text-pre-wrap" data-outcome>{{ a.outcome }}</dd>
+            </ng-container>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-4">
+      <section class="card" aria-labelledby="notes-heading">
+        <div class="card-body">
+          <h2 id="notes-heading" class="h5">Notes</h2>
+
+          <form *ngIf="canAddNote" [formGroup]="noteForm" (ngSubmit)="addNote()" novalidate class="mb-3" data-note-form>
+            <app-form-alert [messages]="noteAlertMessages"></app-form-alert>
+            <label class="form-label" for="note-text">Add a note</label>
+            <textarea id="note-text" class="form-control" rows="3" formControlName="noteText"></textarea>
+            <app-form-errors [control]="noteForm.controls.noteText" label="Note" forId="note-text"></app-form-errors>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="form-text mt-0">{{ maxNoteLength - noteForm.controls.noteText.value.length }} characters remaining</span>
+              <button type="submit" class="btn btn-primary btn-sm" data-action="add-note" [disabled]="addingNote">
+                <span *ngIf="addingNote" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Add note
+              </button>
+            </div>
+          </form>
+
+          <ol class="timeline mt-3" *ngIf="notes.length > 0; else noNotes" data-notes>
+            <li *ngFor="let note of notes; trackBy: trackByNote" [class.timeline-system]="note.isSystem" [attr.data-note-system]="note.isSystem ? '' : null">
+              <div class="small text-body-secondary">
+                <i class="bi me-1" [ngClass]="note.isSystem ? 'bi-gear' : 'bi-chat-left-text'" aria-hidden="true"></i>
+                <span *ngIf="note.isSystem" class="visually-hidden">System note. </span>
+                <strong>{{ note.isSystem ? 'System' : note.createdByName }}</strong> &middot; {{ note.createdDate | date: 'medium' }}
+              </div>
+              <div class="text-pre-wrap" [class.text-body-secondary]="note.isSystem" [class.fst-italic]="note.isSystem">{{ note.noteText }}</div>
+            </li>
+          </ol>
+          <ng-template #noNotes><p class="text-body-secondary mb-0" data-empty="notes">There are no notes yet.</p></ng-template>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <ng-container [ngSwitch]="dialog">
+    <app-comment-dialog
+      *ngSwitchCase="'complete'"
+      title="Complete activity"
+      message="Record the outcome of this activity. It becomes read-only once completed."
+      label="Outcome"
+      confirmLabel="Complete activity"
+      confirmClass="btn-success"
+      [required]="true"
+      [maxLength]="maxOutcomeLength"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="confirm($event)"
+      (cancelled)="closeDialog()"
+    ></app-comment-dialog>
+    <app-comment-dialog
+      *ngSwitchCase="'cancel'"
+      title="Cancel activity"
+      message="Explain why this activity is being cancelled."
+      label="Reason"
+      confirmLabel="Cancel activity"
+      confirmClass="btn-danger"
+      dismissLabel="Keep activity"
+      [required]="true"
+      [maxLength]="maxOutcomeLength"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="confirm($event)"
+      (cancelled)="closeDialog()"
+    ></app-comment-dialog>
+    <app-comment-dialog
+      *ngSwitchCase="'reopen'"
+      title="Reopen activity"
+      message="The activity returns to Open and can be edited again."
+      label="Comment"
+      confirmLabel="Reopen activity"
+      [required]="false"
+      [maxLength]="maxOutcomeLength"
+      [busy]="busy"
+      [error]="dialogError"
+      (confirmed)="confirm($event)"
+      (cancelled)="closeDialog()"
+    ></app-comment-dialog>
+  </ng-container>
+</ng-container>

@@ -1,0 +1,168 @@
+<div class="page-header">
+  <h1>Activities</h1>
+  <a class="btn btn-primary" routerLink="/activities/new" data-action="new-activity">
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New activity
+  </a>
+</div>
+
+<form class="card card-body mb-3" [formGroup]="filterForm" (ngSubmit)="search()" novalidate aria-label="Filter activities" data-filter-form>
+  <div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+      <label class="form-label" for="filter-search">Search</label>
+      <input
+        id="filter-search"
+        type="search"
+        class="form-control"
+        formControlName="searchText"
+        autocomplete="off"
+        placeholder="Number, subject, member or takeback"
+      />
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-status">Status</label>
+      <select id="filter-status" class="form-select" formControlName="status">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of statuses" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-3">
+      <label class="form-label" for="filter-type">Type</label>
+      <select id="filter-type" class="form-select" formControlName="activityType">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of types" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-3">
+      <label class="form-label" for="filter-priority">Priority</label>
+      <select id="filter-priority" class="form-select" formControlName="priority">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of priorities" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-3">
+      <label class="form-label" for="filter-assignee">Assignee</label>
+      <select id="filter-assignee" class="form-select" formControlName="assignedToUserId">
+        <option [ngValue]="null">Anyone</option>
+        <option *ngFor="let user of users" [ngValue]="user.userId">{{ user.displayName }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-due-from">Due from</label>
+      <input id="filter-due-from" type="date" class="form-control" formControlName="dueFrom" />
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-due-to">Due to</label>
+      <input id="filter-due-to" type="date" class="form-control" formControlName="dueTo" />
+      <app-form-errors [control]="filterForm.controls.dueTo" label="Due to" forId="filter-due-to"></app-form-errors>
+    </div>
+    <div class="col-12 col-lg-5 d-flex flex-wrap align-items-end gap-3">
+      <div class="form-check">
+        <input id="filter-open-only" type="checkbox" class="form-check-input" formControlName="openOnly" />
+        <label class="form-check-label" for="filter-open-only">Open only</label>
+      </div>
+      <div class="form-check">
+        <input id="filter-overdue-only" type="checkbox" class="form-check-input" formControlName="overdueOnly" />
+        <label class="form-check-label" for="filter-overdue-only">Overdue only</label>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        [class.active]="isMine"
+        [attr.aria-pressed]="isMine"
+        data-action="assigned-to-me"
+        (click)="toggleAssignedToMe()"
+      >
+        <i class="bi bi-person-check me-1" aria-hidden="true"></i>Assigned to me
+      </button>
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary" data-action="search" [disabled]="loading">
+        <i class="bi bi-search me-1" aria-hidden="true"></i>Search
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-action="reset" (click)="reset()">Reset</button>
+    </div>
+  </div>
+</form>
+
+<app-form-alert [messages]="alertMessages" title="The activities could not be loaded"></app-form-alert>
+<div *ngIf="alertMessages.length > 0 && !loading" class="mb-3">
+  <button type="button" class="btn btn-sm btn-outline-primary" data-action="retry" (click)="retry()">Try again</button>
+</div>
+
+<div class="visually-hidden" role="status" aria-live="polite" data-result-summary>{{ resultSummary }}</div>
+
+<app-loading-spinner *ngIf="loading" label="Loading activities..."></app-loading-spinner>
+
+<ng-container *ngIf="result">
+  <div class="card" [attr.aria-busy]="loading">
+    <app-empty-state
+      *ngIf="items.length === 0 && !loading"
+      title="No activities found"
+      message="No activity matches the current filters. Try widening the search or reset the filters."
+      icon="bi-journal-x"
+    >
+      <a class="btn btn-primary" routerLink="/activities/new">New activity</a>
+    </app-empty-state>
+
+    <div class="table-responsive" *ngIf="items.length > 0">
+      <table class="table table-hover table-sortable align-middle mb-0" data-activity-table>
+        <caption class="visually-hidden">
+          Activities
+        </caption>
+        <thead class="table-light">
+          <tr>
+            <th scope="col" appSortHeader="activityNumber" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Number</th>
+            <th scope="col" appSortHeader="subject" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Subject</th>
+            <th scope="col" appSortHeader="activityType" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Type</th>
+            <th scope="col" appSortHeader="status" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Status</th>
+            <th scope="col" appSortHeader="priority" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Priority</th>
+            <th scope="col" appSortHeader="memberName" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Member</th>
+            <th scope="col">Takeback</th>
+            <th scope="col" appSortHeader="assignedToName" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Assignee</th>
+            <th scope="col" appSortHeader="dueDate" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Due date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items; trackBy: trackByActivity" data-activity-row>
+            <td class="text-nowrap">
+              <a [routerLink]="['/activities', item.activityId]" class="fw-semibold">{{ item.activityNumber }}</a>
+            </td>
+            <td>{{ item.subject }}</td>
+            <td>{{ item.activityType | lookupName: 'activityTypes' }}</td>
+            <td><app-status-badge kind="activityStatus" [value]="item.status"></app-status-badge></td>
+            <td><app-status-badge kind="priority" [value]="item.priority"></app-status-badge></td>
+            <td>
+              <ng-container *ngIf="item.memberName; else noMember">
+                {{ item.memberName }} <span class="text-body-secondary small">({{ item.memberNumber }})</span>
+              </ng-container>
+              <ng-template #noMember><span class="text-body-secondary">&mdash;</span></ng-template>
+            </td>
+            <td class="text-nowrap">
+              <a *ngIf="item.takebackId" [routerLink]="['/takebacks', item.takebackId]">{{ item.takebackNumber }}</a>
+              <span *ngIf="!item.takebackId" class="text-body-secondary">&mdash;</span>
+            </td>
+            <td>{{ item.assignedToName || 'Unassigned' }}</td>
+            <td class="text-nowrap">
+              <span *ngIf="item.dueDate">{{ item.dueDate | calendarDate }}</span>
+              <span *ngIf="!item.dueDate" class="text-body-secondary">&mdash;</span>
+              <app-overdue-badge class="ms-1" [overdue]="item.isOverdue"></app-overdue-badge>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-footer bg-body" *ngIf="result.totalCount > 0">
+      <app-pager
+        [pageNumber]="result.pageNumber"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        [totalPages]="result.totalPages"
+        [pageSizes]="pageSizes"
+        [disabled]="loading"
+        (pageChange)="onPage($event)"
+        (pageSizeChange)="onPageSize($event)"
+      ></app-pager>
+    </div>
+  </div>
+</ng-container>

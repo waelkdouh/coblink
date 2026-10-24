@@ -1,0 +1,23 @@
+<Project>
+
+  <!--
+    Baseline ("as-is") build settings for every .NET project in the solution.
+    The target framework is centralised here on purpose: moving to .NET 10 starts with one
+    property change, followed by the package and code changes described in README.md.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+
+    <!-- Legacy-style compiler defaults: explicit usings, nullable reference types off. -->
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+
+    <Version>1.0.0</Version>
+    <Company>COBLink</Company>
+    <Product>COBLink</Product>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

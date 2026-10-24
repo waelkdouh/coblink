@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CobLink.Data</RootNamespace>
+    <AssemblyName>CobLink.Data</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CobLink.Models\CobLink.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Deliberately the legacy provider: migrating to Microsoft.Data.SqlClient is a modernization task. -->
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+  </ItemGroup>
+
+</Project>

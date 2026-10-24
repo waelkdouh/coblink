@@ -1,0 +1,13 @@
+.entity-picker-list {
+  z-index: 1030;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.entity-picker-list .list-group-item {
+  cursor: pointer;
+}
+
+.entity-picker-chip .text-truncate {
+  min-width: 0;
+}

@@ -1,0 +1,127 @@
+<div class="page-header">
+  <h1>{{ isEdit ? 'Edit activity' : 'New activity' }} <small *ngIf="activity" class="text-body-secondary fs-5 ms-1">{{ activity.activityNumber }}</small></h1>
+</div>
+
+<app-loading-spinner *ngIf="loading" label="Loading..."></app-loading-spinner>
+
+<div *ngIf="loadError" class="alert alert-danger" role="alert" data-load-error>
+  <p class="mb-2">{{ loadError.message }}</p>
+  <a class="btn btn-sm btn-outline-danger" routerLink="/activities">Back to activities</a>
+</div>
+
+<ng-container *ngIf="!loading && !loadError">
+  <app-concurrency-panel *ngIf="concurrency" [busy]="reloading" (reload)="reloadActivity()"></app-concurrency-panel>
+
+  <div *ngIf="!canEdit" class="alert alert-info" role="status" data-read-only>
+    <p *ngIf="canReopen; else notAllowed" class="mb-2">This activity is {{ activity?.status | lookupName: 'activityStatuses' | lowercase }} and cannot be edited. Reopen it from the detail page first.</p>
+    <ng-template #notAllowed>
+      <p class="mb-2">You cannot edit this activity. Analysts can only change activities they created or that are assigned to them; supervisors and administrators can change any activity.</p>
+    </ng-template>
+    <a class="btn btn-sm btn-outline-primary" [routerLink]="['/activities', activity?.activityId]">Back to the activity</a>
+  </div>
+
+  <form *ngIf="canEdit" class="card card-body" [formGroup]="form" (ngSubmit)="save()" novalidate data-activity-form>
+    <app-form-alert [messages]="alertMessages"></app-form-alert>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="activity-type">Activity type <span class="text-danger" aria-hidden="true">*</span></label>
+        <select id="activity-type" class="form-select" formControlName="activityType" aria-required="true">
+          <option [ngValue]="null">Select a type</option>
+          <option *ngFor="let item of types" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.activityType" label="Activity type" forId="activity-type"></app-form-errors>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="activity-priority">Priority <span class="text-danger" aria-hidden="true">*</span></label>
+        <select id="activity-priority" class="form-select" formControlName="priority" aria-required="true">
+          <option [ngValue]="null">Select a priority</option>
+          <option *ngFor="let item of priorities" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.priority" label="Priority" forId="activity-priority"></app-form-errors>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="activity-status">Status <span class="text-danger" aria-hidden="true">*</span></label>
+        <select id="activity-status" class="form-select" formControlName="status" aria-required="true">
+          <option *ngFor="let item of statuses" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.status" label="Status" forId="activity-status"></app-form-errors>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="activity-subject">Subject <span class="text-danger" aria-hidden="true">*</span></label>
+        <input id="activity-subject" type="text" class="form-control" formControlName="subject" aria-required="true" />
+        <div class="form-text" *ngIf="form.controls.subject.value.length > maxSubjectLength - 40">
+          {{ maxSubjectLength - form.controls.subject.value.length }} characters remaining
+        </div>
+        <app-form-errors [control]="form.controls.subject" label="Subject" forId="activity-subject"></app-form-errors>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="activity-description">Description</label>
+        <textarea id="activity-description" class="form-control" rows="5" formControlName="description"></textarea>
+        <app-form-errors [control]="form.controls.description" label="Description" forId="activity-description"></app-form-errors>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="activity-assignee">Assigned to</label>
+        <select id="activity-assignee" class="form-select" formControlName="assignedToUserId">
+          <option [ngValue]="null">Unassigned</option>
+          <option *ngIf="inactiveAssignee" [ngValue]="inactiveAssignee.userId">{{ inactiveAssignee.name }} (inactive)</option>
+          <option *ngFor="let user of users" [ngValue]="user.userId">{{ user.displayName }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.assignedToUserId" label="Assignee" forId="activity-assignee"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="activity-due-date">Due date</label>
+        <input
+          id="activity-due-date"
+          type="date"
+          class="form-control"
+          formControlName="dueDate"
+          [attr.min]="isEdit ? null : today"
+        />
+        <app-form-errors [control]="form.controls.dueDate" label="Due date" forId="activity-due-date"></app-form-errors>
+      </div>
+
+      <div class="col-12" *ngIf="takebackId !== null; else memberField" data-linked-takeback>
+        <label class="form-label" for="activity-takeback">Linked takeback</label>
+        <div class="input-group">
+          <input
+            id="activity-takeback"
+            type="text"
+            class="form-control"
+            readonly
+            [value]="linkedTakebackNumber || 'Takeback #' + takebackId"
+            aria-describedby="activity-takeback-hint"
+          />
+          <a class="btn btn-outline-secondary" [routerLink]="['/takebacks', takebackId]">View takeback</a>
+        </div>
+        <div id="activity-takeback-hint" class="form-text">
+          The member comes from the takeback<span *ngIf="linkedMemberName">: {{ linkedMemberName }}</span>.
+        </div>
+      </div>
+      <ng-template #memberField>
+        <div class="col-12" data-member-field>
+          <label class="form-label" for="activity-member">Member</label>
+          <app-member-picker
+            formControlName="memberId"
+            inputId="activity-member"
+            [initialLabel]="memberLabel"
+            [invalid]="showError(form.controls.memberId)"
+            [describedBy]="showError(form.controls.memberId) ? 'activity-member-errors' : null"
+          ></app-member-picker>
+          <app-form-errors [control]="form.controls.memberId" label="Member" forId="activity-member"></app-form-errors>
+          <div class="form-text">Leave empty for a general activity that is not about one member.</div>
+        </div>
+      </ng-template>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <button type="submit" class="btn btn-primary" data-action="save" [disabled]="saving">
+        <span *ngIf="saving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ isEdit ? 'Save changes' : 'Create activity' }}
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-action="cancel" [disabled]="saving" (click)="cancel()">Cancel</button>
+    </div>
+  </form>
+</ng-container>
