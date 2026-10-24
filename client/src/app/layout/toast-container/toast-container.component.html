@@ -1,0 +1,24 @@
+<div class="toast-container-coblink" aria-live="polite" aria-atomic="false">
+  <div
+    *ngFor="let toast of toasts$ | async; trackBy: trackById"
+    class="toast show border-0 mb-2"
+    data-toast
+    [ngClass]="colourClass(toast)"
+    [attr.data-toast-kind]="toast.kind"
+    [attr.role]="toast.kind === 'error' ? 'alert' : 'status'"
+  >
+    <div class="d-flex">
+      <div class="toast-body">
+        <strong *ngIf="toast.title" class="d-block">{{ toast.title }}</strong>
+        {{ toast.message }}
+      </div>
+      <button
+        type="button"
+        class="btn-close m-auto me-2"
+        aria-label="Close"
+        [class.btn-close-white]="closeButtonIsLight(toast)"
+        (click)="dismiss(toast)"
+      ></button>
+    </div>
+  </div>
+</div>

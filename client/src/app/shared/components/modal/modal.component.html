@@ -1,0 +1,27 @@
+<div class="modal-backdrop show" aria-hidden="true"></div>
+<div
+  #dialog
+  class="modal d-block"
+  tabindex="-1"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+  (click)="onBackdropClick($event)"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+    [class.modal-sm]="size === 'sm'"
+    [class.modal-lg]="size === 'lg'"
+  >
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" [id]="titleId">{{ title }}</h2>
+        <button type="button" class="btn-close" aria-label="Close" [disabled]="!dismissible" (click)="close()"></button>
+      </div>
+      <div class="modal-body">
+        <ng-content></ng-content>
+      </div>
+      <div class="modal-footer"><ng-content select="[appModalFooter]"></ng-content></div>
+    </div>
+  </div>
+</div>

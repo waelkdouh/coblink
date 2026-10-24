@@ -1,0 +1,8 @@
+<footer class="border-top bg-body py-3 small text-body-secondary">
+  <div class="container-fluid d-flex flex-wrap justify-content-between gap-2">
+    <span>COBLink &ndash; coordination of benefits tracking</span>
+    <span *ngIf="session$ | async as session" data-footer-info>
+      Version {{ session.version }} &middot; {{ session.environmentName }}
+    </span>
+  </div>
+</footer>

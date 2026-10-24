@@ -1,0 +1,6 @@
+<div *ngIf="messages.length > 0" class="alert alert-danger" role="alert" data-form-alert>
+  <p class="fw-semibold mb-1">{{ title }}</p>
+  <ul class="mb-0 ps-3">
+    <li *ngFor="let message of messages">{{ message }}</li>
+  </ul>
+</div>

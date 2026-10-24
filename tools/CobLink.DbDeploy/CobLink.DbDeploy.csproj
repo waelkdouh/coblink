@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CobLink.DbDeploy</RootNamespace>
+    <AssemblyName>CobLink.DbDeploy</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CobLink.Data\CobLink.Data.csproj" />
+  </ItemGroup>
+
+</Project>

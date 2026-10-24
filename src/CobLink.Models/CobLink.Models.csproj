@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>CobLink.Models</RootNamespace>
+    <AssemblyName>CobLink.Models</AssemblyName>
+  </PropertyGroup>
+
+</Project>

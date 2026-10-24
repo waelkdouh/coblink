@@ -1,0 +1,152 @@
+<div class="page-header">
+  <h1>
+    {{ isEdit ? 'Edit takeback' : 'New takeback' }} <small *ngIf="takeback" class="text-body-secondary fs-5 ms-1">{{ takeback.takebackNumber }}</small>
+  </h1>
+</div>
+
+<app-loading-spinner *ngIf="loading" label="Loading..."></app-loading-spinner>
+
+<div *ngIf="loadError" class="alert alert-danger" role="alert" data-load-error>
+  <p class="mb-2">{{ loadError.message }}</p>
+  <a class="btn btn-sm btn-outline-danger" routerLink="/takebacks">Back to takebacks</a>
+</div>
+
+<ng-container *ngIf="!loading && !loadError">
+  <app-concurrency-panel *ngIf="concurrency" [busy]="reloading" (reload)="reloadTakeback()"></app-concurrency-panel>
+
+  <div *ngIf="!canEdit" class="alert alert-info" role="status" data-read-only>
+    <p class="mb-2">
+      This takeback is {{ takeback?.status | lookupName: 'takebackStatuses' | lowercase }} and cannot be edited. Only draft and rejected takebacks can be changed, by their creator or a supervisor.
+    </p>
+    <a class="btn btn-sm btn-outline-primary" [routerLink]="['/takebacks', takeback?.takebackId]">Back to the takeback</a>
+  </div>
+
+  <form *ngIf="canEdit" class="card card-body" [formGroup]="form" (ngSubmit)="save()" novalidate data-takeback-form>
+    <app-form-alert [messages]="alertMessages"></app-form-alert>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label" for="takeback-claim">Claim number <span class="text-danger" aria-hidden="true">*</span></label>
+        <input
+          id="takeback-claim"
+          type="text"
+          class="form-control"
+          formControlName="claimNumber"
+          autocomplete="off"
+          aria-required="true"
+        />
+        <div class="form-text">Letters, digits and dashes, up to {{ maxClaimNumberLength }} characters.</div>
+        <app-form-errors [control]="form.controls.claimNumber" label="Claim number" forId="takeback-claim"></app-form-errors>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="takeback-reason">Reason <span class="text-danger" aria-hidden="true">*</span></label>
+        <select id="takeback-reason" class="form-select" formControlName="reason" aria-required="true">
+          <option [ngValue]="null">Select a reason</option>
+          <option *ngFor="let item of reasons" [ngValue]="item.id">{{ item.name }}</option>
+        </select>
+        <app-form-errors [control]="form.controls.reason" label="Reason" forId="takeback-reason"></app-form-errors>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="takeback-service-date">Date of service <span class="text-danger" aria-hidden="true">*</span></label>
+        <input
+          id="takeback-service-date"
+          type="date"
+          class="form-control"
+          formControlName="dateOfService"
+          aria-required="true"
+          [attr.max]="today"
+        />
+        <app-form-errors [control]="form.controls.dateOfService" label="Date of service" forId="takeback-service-date"></app-form-errors>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="takeback-member">Member <span class="text-danger" aria-hidden="true">*</span></label>
+        <app-member-picker
+          formControlName="memberId"
+          inputId="takeback-member"
+          [initialLabel]="memberLabel"
+          [invalid]="showError(form.controls.memberId)"
+          [describedBy]="showError(form.controls.memberId) ? 'takeback-member-errors' : null"
+        ></app-member-picker>
+        <app-form-errors [control]="form.controls.memberId" label="Member" forId="takeback-member"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="takeback-provider">Provider <span class="text-danger" aria-hidden="true">*</span></label>
+        <app-provider-picker
+          formControlName="providerId"
+          inputId="takeback-provider"
+          [initialLabel]="providerLabel"
+          [invalid]="showError(form.controls.providerId)"
+          [describedBy]="showError(form.controls.providerId) ? 'takeback-provider-errors' : null"
+        ></app-provider-picker>
+        <app-form-errors [control]="form.controls.providerId" label="Provider" forId="takeback-provider"></app-form-errors>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="takeback-original-paid">Original paid amount <span class="text-danger" aria-hidden="true">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text" aria-hidden="true">$</span>
+          <input
+            id="takeback-original-paid"
+            type="number"
+            class="form-control"
+            formControlName="originalPaidAmount"
+            step="0.01"
+            inputmode="decimal"
+            aria-required="true"
+          />
+        </div>
+        <app-form-errors [control]="form.controls.originalPaidAmount" label="Original paid amount" forId="takeback-original-paid"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="takeback-amount">Takeback amount <span class="text-danger" aria-hidden="true">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text" aria-hidden="true">$</span>
+          <input
+            id="takeback-amount"
+            type="number"
+            class="form-control"
+            formControlName="takebackAmount"
+            step="0.01"
+            inputmode="decimal"
+            aria-required="true"
+          />
+        </div>
+        <div class="form-text">At most the original paid amount, with up to 2 decimals.</div>
+        <app-form-errors [control]="form.controls.takebackAmount" label="Takeback amount" forId="takeback-amount"></app-form-errors>
+      </div>
+
+      <div class="col-md-6" *ngIf="isOtherInsurance" data-other-carrier>
+        <label class="form-label" for="takeback-carrier">Other carrier name <span class="text-danger" aria-hidden="true">*</span></label>
+        <input
+          id="takeback-carrier"
+          type="text"
+          class="form-control"
+          formControlName="otherCarrierName"
+          autocomplete="off"
+          aria-required="true"
+        />
+        <app-form-errors [control]="form.controls.otherCarrierName" label="Other carrier name" forId="takeback-carrier"></app-form-errors>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="takeback-policy">Other policy number</label>
+        <input id="takeback-policy" type="text" class="form-control" formControlName="otherPolicyNumber" autocomplete="off" />
+        <app-form-errors [control]="form.controls.otherPolicyNumber" label="Other policy number" forId="takeback-policy"></app-form-errors>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label" for="takeback-notes">Notes</label>
+        <textarea id="takeback-notes" class="form-control" rows="4" formControlName="notes"></textarea>
+        <div class="form-text">{{ maxNotesLength - form.controls.notes.value.length }} characters remaining</div>
+        <app-form-errors [control]="form.controls.notes" label="Notes" forId="takeback-notes"></app-form-errors>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <button type="submit" class="btn btn-primary" data-action="save" [disabled]="saving">
+        <span *ngIf="saving" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ isEdit ? 'Save changes' : 'Create takeback' }}
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-action="cancel" [disabled]="saving" (click)="cancel()">Cancel</button>
+    </div>
+  </form>
+</ng-container>

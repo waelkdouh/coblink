@@ -1,0 +1,6 @@
+<div class="text-center text-body-secondary py-5 px-3" data-empty-state>
+  <i class="bi fs-1 d-block mb-2" [ngClass]="icon" aria-hidden="true"></i>
+  <h2 class="h5 text-body">{{ title }}</h2>
+  <p *ngIf="message" class="mb-3">{{ message }}</p>
+  <ng-content></ng-content>
+</div>

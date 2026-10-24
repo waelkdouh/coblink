@@ -1,0 +1,75 @@
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-2" aria-label="Pagination">
+  <div class="small text-body-secondary" role="status" aria-live="polite">
+    <ng-container *ngIf="totalCount > 0; else noResults">
+      Showing {{ firstItem }}-{{ lastItem }} of {{ totalCount }}
+    </ng-container>
+    <ng-template #noResults>No results</ng-template>
+  </div>
+
+  <ul class="pagination pagination-sm mb-0">
+    <li class="page-item" [class.disabled]="isFirstPage || disabled">
+      <button
+        type="button"
+        class="page-link"
+        data-pager="first"
+        aria-label="First page"
+        [disabled]="isFirstPage || disabled"
+        (click)="goTo(1)"
+      >
+        <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+      </button>
+    </li>
+    <li class="page-item" [class.disabled]="isFirstPage || disabled">
+      <button
+        type="button"
+        class="page-link"
+        data-pager="previous"
+        aria-label="Previous page"
+        [disabled]="isFirstPage || disabled"
+        (click)="goTo(pageNumber - 1)"
+      >
+        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+      </button>
+    </li>
+    <li class="page-item disabled">
+      <span class="page-link" data-pager="position">Page {{ pageNumber }} of {{ pageCount }}</span>
+    </li>
+    <li class="page-item" [class.disabled]="isLastPage || disabled">
+      <button
+        type="button"
+        class="page-link"
+        data-pager="next"
+        aria-label="Next page"
+        [disabled]="isLastPage || disabled"
+        (click)="goTo(pageNumber + 1)"
+      >
+        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+      </button>
+    </li>
+    <li class="page-item" [class.disabled]="isLastPage || disabled">
+      <button
+        type="button"
+        class="page-link"
+        data-pager="last"
+        aria-label="Last page"
+        [disabled]="isLastPage || disabled"
+        (click)="goTo(pageCount)"
+      >
+        <i class="bi bi-chevron-double-right" aria-hidden="true"></i>
+      </button>
+    </li>
+  </ul>
+
+  <div class="d-flex align-items-center gap-2">
+    <label class="form-label small mb-0" [for]="sizeSelectId">Rows per page</label>
+    <select
+      #sizeSelect
+      class="form-select form-select-sm w-auto"
+      [id]="sizeSelectId"
+      [disabled]="disabled"
+      (change)="onPageSizeChange(sizeSelect.value)"
+    >
+      <option *ngFor="let size of pageSizes" [value]="size" [selected]="size === pageSize">{{ size }}</option>
+    </select>
+  </div>
+</nav>

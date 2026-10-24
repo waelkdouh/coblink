@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>CobLink.Api</RootNamespace>
+    <AssemblyName>CobLink.Api</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CobLink.Models\CobLink.Models.csproj" />
+    <ProjectReference Include="..\CobLink.Data\CobLink.Data.csproj" />
+    <ProjectReference Include="..\CobLink.Business\CobLink.Business.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Legacy JSON stack (Newtonsoft) and Swagger UI; the target stack uses System.Text.Json + built-in OpenAPI. -->
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.32" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.32" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Ship the SQL scripts next to the binaries so the optional Database:AutoDeploy setting works for dotnet run / publish / Docker. -->
+    <Content Include="..\..\database\scripts\**\*.sql" Link="database\scripts\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\database\sample-data\**\*.sql" Link="database\sample-data\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

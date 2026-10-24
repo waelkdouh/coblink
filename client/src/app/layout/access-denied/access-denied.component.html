@@ -1,0 +1,21 @@
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card border-danger shadow-sm">
+      <div class="card-body text-center p-4 p-md-5">
+        <i class="bi bi-shield-lock display-4 text-danger" aria-hidden="true"></i>
+        <h1 class="h3 mt-3">Access denied</h1>
+
+        <app-loading-spinner *ngIf="checking" label="Checking your access..."></app-loading-spinner>
+
+        <p *ngIf="message" class="lead" data-access-message>{{ message }}</p>
+        <p class="text-body-secondary">
+          Your account must be registered and active in COBLink. Contact your COBLink administrator to request access.
+        </p>
+
+        <button *ngIf="canUseDefaultUser" type="button" class="btn btn-primary" data-use-default-user (click)="useDefaultUser()">
+          Use the default user
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

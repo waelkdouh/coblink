@@ -1,0 +1,168 @@
+<div class="page-header">
+  <h1>Takebacks</h1>
+  <a class="btn btn-primary" routerLink="/takebacks/new" data-action="new-takeback">
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New takeback
+  </a>
+</div>
+
+<form class="card card-body mb-3" [formGroup]="filterForm" (ngSubmit)="search()" novalidate aria-label="Filter takebacks" data-filter-form>
+  <div class="row g-3">
+    <div class="col-12 col-md-6 col-lg-4">
+      <label class="form-label" for="filter-search">Search</label>
+      <input
+        id="filter-search"
+        type="search"
+        class="form-control"
+        formControlName="searchText"
+        autocomplete="off"
+        placeholder="Takeback, claim, member or provider"
+      />
+    </div>
+    <div class="col-6 col-md-3 col-lg-4">
+      <label class="form-label" for="filter-status">Status</label>
+      <select id="filter-status" class="form-select" formControlName="status">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of statuses" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-4">
+      <label class="form-label" for="filter-reason">Reason</label>
+      <select id="filter-reason" class="form-select" formControlName="reason">
+        <option [ngValue]="null">All</option>
+        <option *ngFor="let item of reasons" [ngValue]="item.id">{{ item.name }}</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-due-from">Due from</label>
+      <input id="filter-due-from" type="date" class="form-control" formControlName="dueFrom" />
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-due-to">Due to</label>
+      <input id="filter-due-to" type="date" class="form-control" formControlName="dueTo" />
+      <app-form-errors [control]="filterForm.controls.dueTo" label="Due to" forId="filter-due-to"></app-form-errors>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-min-amount">Min amount</label>
+      <input id="filter-min-amount" type="number" class="form-control" formControlName="minAmount" min="0" step="0.01" inputmode="decimal" />
+      <app-form-errors [control]="filterForm.controls.minAmount" label="Min amount" forId="filter-min-amount"></app-form-errors>
+    </div>
+    <div class="col-6 col-md-3 col-lg-2">
+      <label class="form-label" for="filter-max-amount">Max amount</label>
+      <input id="filter-max-amount" type="number" class="form-control" formControlName="maxAmount" min="0" step="0.01" inputmode="decimal" />
+      <app-form-errors [control]="filterForm.controls.maxAmount" label="Max amount" forId="filter-max-amount"></app-form-errors>
+    </div>
+    <div class="col-12 col-lg-4 d-flex flex-wrap align-items-end gap-3">
+      <div class="form-check">
+        <input id="filter-overdue-only" type="checkbox" class="form-check-input" formControlName="overdueOnly" />
+        <label class="form-check-label" for="filter-overdue-only">Overdue only</label>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary"
+        [class.active]="isMine"
+        [attr.aria-pressed]="isMine"
+        data-action="created-by-me"
+        (click)="toggleCreatedByMe()"
+      >
+        <i class="bi bi-person-check me-1" aria-hidden="true"></i>Created by me
+      </button>
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary" data-action="search" [disabled]="loading">
+        <i class="bi bi-search me-1" aria-hidden="true"></i>Search
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-action="reset" (click)="reset()">Reset</button>
+    </div>
+  </div>
+</form>
+
+<app-form-alert [messages]="alertMessages" title="The takebacks could not be loaded"></app-form-alert>
+<div *ngIf="alertMessages.length > 0 && !loading" class="mb-3">
+  <button type="button" class="btn btn-sm btn-outline-primary" data-action="retry" (click)="retry()">Try again</button>
+</div>
+
+<div class="visually-hidden" role="status" aria-live="polite" data-result-summary>{{ resultSummary }}</div>
+
+<app-loading-spinner *ngIf="loading" label="Loading takebacks..."></app-loading-spinner>
+
+<ng-container *ngIf="result">
+  <div class="card" [attr.aria-busy]="loading">
+    <app-empty-state
+      *ngIf="items.length === 0 && !loading"
+      title="No takebacks found"
+      message="No takeback matches the current filters. Try widening the search or reset the filters."
+      icon="bi-cash-stack"
+    >
+      <a class="btn btn-primary" routerLink="/takebacks/new">New takeback</a>
+    </app-empty-state>
+
+    <div class="table-responsive" *ngIf="items.length > 0">
+      <table class="table table-hover table-sortable align-middle mb-0" data-takeback-table>
+        <caption class="visually-hidden">
+          Takebacks
+        </caption>
+        <thead class="table-light">
+          <tr>
+            <th scope="col" appSortHeader="takebackNumber" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Takeback</th>
+            <th scope="col" appSortHeader="claimNumber" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Claim</th>
+            <th scope="col" appSortHeader="memberName" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Member</th>
+            <th scope="col" appSortHeader="providerName" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Provider</th>
+            <th scope="col" appSortHeader="reason" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Reason</th>
+            <th scope="col" appSortHeader="status" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Status</th>
+            <th scope="col" class="text-end" appSortHeader="takebackAmount" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Takeback amount</th>
+            <th scope="col" class="text-end" appSortHeader="recoveredAmount" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Recovered</th>
+            <th scope="col" class="text-end" appSortHeader="outstandingAmount" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Outstanding</th>
+            <th scope="col" appSortHeader="dueDate" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Due date</th>
+            <th scope="col" appSortHeader="createdDate" [sortBy]="query.sortBy" [sortDescending]="query.sortDescending" (sortChange)="onSort($event)">Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items; trackBy: trackByTakeback" data-takeback-row>
+            <td class="text-nowrap">
+              <a [routerLink]="['/takebacks', item.takebackId]" class="fw-semibold">{{ item.takebackNumber }}</a>
+            </td>
+            <td class="text-nowrap">{{ item.claimNumber }}</td>
+            <td>
+              {{ item.memberName }}
+              <span *ngIf="item.memberNumber" class="text-body-secondary small">({{ item.memberNumber }})</span>
+            </td>
+            <td>{{ item.providerName }}</td>
+            <td>{{ item.reason | lookupName: 'takebackReasons' }}</td>
+            <td><app-status-badge kind="takebackStatus" [value]="item.status"></app-status-badge></td>
+            <td class="text-end text-nowrap">{{ item.takebackAmount | currency: 'USD' }}</td>
+            <td class="text-end text-nowrap">{{ item.recoveredAmount | currency: 'USD' }}</td>
+            <td class="text-end text-nowrap">{{ item.outstandingAmount | currency: 'USD' }}</td>
+            <td class="text-nowrap">
+              <span *ngIf="item.dueDate">{{ item.dueDate | calendarDate }}</span>
+              <span *ngIf="!item.dueDate" class="text-body-secondary">&mdash;</span>
+              <app-overdue-badge class="ms-1" [overdue]="item.isOverdue"></app-overdue-badge>
+            </td>
+            <td class="text-nowrap">{{ item.createdDate | date: 'M/d/yyyy, h:mm a' }}</td>
+          </tr>
+        </tbody>
+        <tfoot class="table-light" data-page-totals>
+          <tr class="fw-semibold">
+            <th scope="row" colspan="6">Totals on this page</th>
+            <td class="text-end text-nowrap" data-total="takebackAmount">{{ totals.takebackAmount | currency: 'USD' }}</td>
+            <td class="text-end text-nowrap" data-total="recoveredAmount">{{ totals.recoveredAmount | currency: 'USD' }}</td>
+            <td class="text-end text-nowrap" data-total="outstandingAmount">{{ totals.outstandingAmount | currency: 'USD' }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="card-footer bg-body" *ngIf="result.totalCount > 0">
+      <app-pager
+        [pageNumber]="result.pageNumber"
+        [pageSize]="result.pageSize"
+        [totalCount]="result.totalCount"
+        [totalPages]="result.totalPages"
+        [pageSizes]="pageSizes"
+        [disabled]="loading"
+        (pageChange)="onPage($event)"
+        (pageSizeChange)="onPageSize($event)"
+      ></app-pager>
+    </div>
+  </div>
+</ng-container>

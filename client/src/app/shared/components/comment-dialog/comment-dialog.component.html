@@ -1,0 +1,34 @@
+<app-modal [title]="title" [dismissible]="!busy" (closed)="cancelled.emit()">
+  <form [id]="formId" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <p *ngIf="message" class="mb-3">{{ message }}</p>
+    <app-form-alert [messages]="alertMessages"></app-form-alert>
+    <label class="form-label" [for]="textareaId">
+      {{ label }}<span *ngIf="required" class="text-danger" aria-hidden="true"> *</span>
+      <span *ngIf="!required" class="text-body-secondary fw-normal"> (optional)</span>
+    </label>
+    <textarea
+      class="form-control"
+      formControlName="comment"
+      [id]="textareaId"
+      [rows]="rows"
+      [attr.aria-required]="required"
+    ></textarea>
+    <app-form-errors [control]="commentControl" [label]="label" [forId]="textareaId"></app-form-errors>
+    <div *ngIf="remaining !== null" class="form-text">{{ remaining }} characters remaining</div>
+  </form>
+
+  <button type="button" appModalFooter class="btn btn-outline-secondary" data-dialog-dismiss [disabled]="busy" (click)="cancelled.emit()">
+    {{ dismissLabel }}
+  </button>
+  <button
+    type="submit"
+    appModalFooter
+    class="btn"
+    data-dialog-confirm
+    [ngClass]="confirmClass"
+    [attr.form]="formId"
+    [disabled]="busy"
+  >
+    <span *ngIf="busy" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>{{ confirmLabel }}
+  </button>
+</app-modal>

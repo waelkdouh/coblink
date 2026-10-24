@@ -1,0 +1,82 @@
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-coblink" aria-label="Main navigation">
+    <div class="container-fluid">
+      <a class="navbar-brand fw-bold" routerLink="/dashboard" aria-label="COBLink home">
+        <span class="brand-cob">COB</span><span class="brand-link">Link</span>
+      </a>
+
+      <ng-container *ngIf="session$ | async as session">
+        <button
+          type="button"
+          class="navbar-toggler"
+          aria-controls="main-menu"
+          aria-label="Toggle navigation"
+          [attr.aria-expanded]="menuOpen"
+          (click)="toggleMenu()"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div id="main-menu" class="navbar-collapse collapse" [class.show]="menuOpen">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenus()">Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/activities" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenus()">Activities</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/takebacks" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="closeMenus()">Takebacks</a>
+            </li>
+          </ul>
+
+          <ul class="navbar-nav align-items-lg-center gap-lg-3">
+            <li
+              *ngIf="session.authenticationMode === 'Development'"
+              class="nav-item dropdown"
+              data-persona-switcher
+              appClickOutside
+              (appClickOutside)="personaOpen = false"
+              (keydown.escape)="personaOpen = false"
+            >
+              <button
+                type="button"
+                id="persona-toggle"
+                class="nav-link dropdown-toggle"
+                aria-haspopup="true"
+                [attr.aria-expanded]="personaOpen"
+                (click)="togglePersonaMenu()"
+              >
+                <i class="bi bi-person-badge me-1" aria-hidden="true"></i>Switch user
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="persona-toggle" [class.show]="personaOpen">
+                <li><h2 class="dropdown-header">Development personas</h2></li>
+                <li *ngIf="usersLoading"><span class="dropdown-item-text">Loading users...</span></li>
+                <li *ngIf="usersError"><span class="dropdown-item-text text-danger">{{ usersError }}</span></li>
+                <li *ngFor="let user of users">
+                  <button
+                    type="button"
+                    class="dropdown-item d-flex justify-content-between align-items-center gap-3"
+                    data-persona-option
+                    [class.active]="isCurrent(user)"
+                    [attr.aria-current]="isCurrent(user) ? 'true' : null"
+                    (click)="choosePersona(user)"
+                  >
+                    <span>{{ user.displayName }}</span>
+                    <span class="badge text-bg-secondary">{{ user.role | lookupName: 'userRoles' }}</span>
+                  </button>
+                </li>
+              </ul>
+            </li>
+
+            <li class="nav-item d-flex align-items-center gap-2 py-2 py-lg-0" data-current-user>
+              <i class="bi bi-person-circle text-white" aria-hidden="true"></i>
+              <span class="navbar-text text-white py-0" data-user-name>{{ session.user.displayName }}</span>
+              <span class="badge text-bg-light" data-user-role>{{ session.user.role | lookupName: 'userRoles' }}</span>
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+    </div>
+  </nav>
+</header>
